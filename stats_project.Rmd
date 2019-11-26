@@ -1,0 +1,103 @@
+---
+title: "Statistics Project"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(knitr)
+library(reshape)
+library(lubridate)
+```
+
+
+```{r}
+weather <- read_csv("uber-lyft-cab-prices/weather.csv")
+rides <- read_csv("uber-lyft-cab-prices/cab_rides.csv")
+```
+
+
+# Check data for completness:
+```{r}
+ridesNA <- rides %>%
+  select(everything()) %>%
+  summarise_all(funs(sum(is.na(.))))
+
+PropRidesNA <- (ridesNA/nrow(rides))*100
+kable(PropRidesNA, format = "markdown")
+
+weatherNA <- weather %>%
+  select(everything()) %>%
+  summarise_all(funs(sum(is.na(.))))
+
+PropWeatherNA <- (weatherNA/nrow(weather))*100
+kable(PropWeatherNA, format = "markdown")
+```
+Roughly 8% of values from price column missing in rides, the rest are complete. 85% of values from rain missing in weather table, the rest are complete. It's proabably that the NA values in the rain column just correspond to 0% chance of rain. 
+
+```{r}
+# To replace missing values of rian with 0
+weather$rain[is.na(weather$rain)] <- 0
+```
+
+# To fix the timestamp:
+```{r}
+rides$timestamp <- as.POSIXct(rides$time_stamp/1000,origin='1970-01-01',tz='America/New_York')
+rides$Date <- as.Date(rides$timestamp)
+rides$Time <- format(rides$timestamp,"%H:%M:%S")
+rides$weekdays <- weekdays(rides$Date)
+
+weather$timestamp<-as.POSIXct(weather$time_stamp,origin='1970-01-01',tz='America/New_York')
+weather$Date<-as.Date(weather$timestamp)
+weather$Time <- format(weather$timestamp,"%H:%M:%S")
+```
+
+# Merge datasets
+```{r}
+weather$hour<-hour(hms(weather$Time))
+weather$merge<-paste(weather$location,weather$Date,weather$hou)
+rides$hour<-hour(hms(rides$Time))
+rides$merge<-paste(rides$destination,rides$Date,rides$hour)
+```
+
+
+```{r}
+ggplot(rides, aes(distance, price)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
