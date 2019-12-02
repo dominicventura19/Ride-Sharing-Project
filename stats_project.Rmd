@@ -11,6 +11,7 @@ library(tidyverse)
 library(knitr)
 library(reshape)
 library(lubridate)
+library(gridExtra)
 ```
 
 
@@ -64,9 +65,61 @@ rides$merge<-paste(rides$destination,rides$Date,rides$hour)
 ```
 
 
+# Variable of interest
 ```{r}
+summary(rides$price)
+
+ggplot(rides, aes(price, color = cab_type)) +
+  geom_histogram(fill="white", alpha=0.5, position="identity", alpha=0.5) +
+  theme_bw()
+
+ggplot(rides, aes(as.factor(cab_type), price)) +
+  geom_boxplot(varwidth=T, fill="plum") +
+  labs(x = "Cab Type") +
+  theme_bw()
+```
+
+
+# How does price vary by cab type?
+```{r}
+levels(as.factor(rides$name[rides$cab_type == "Uber"]))
+levels(as.factor(rides$name[rides$cab_type == "Lyft"]))
+
+
+rides %>%
+  filter(cab_type == "Uber") %>%
+  group_by(name) %>% 
+  summarise(min(price), max(price), median(price), mean(price))
+
+rides %>%
+  filter(cab_type == "Lyft") %>%
+  group_by(name) %>% 
+  summarise(min(price), max(price), median(price), mean(price))
+
+
+Uber.price <- ggplot(rides %>% filter(cab_type == "Uber" & name != "Taxi") %>% group_by(name), aes(reorder(as.factor(name), price, FUN = median), price, fill = name)) +
+  geom_boxplot(position=position_dodge(1)) +
+  labs(title = "Uber", x = " ") +
+  theme_bw()
+
+Lyft.price <- ggplot(rides %>% filter(cab_type == "Lyft" & name != "Taxi") %>% group_by(name), aes(reorder(as.factor(name), price, FUN = median), price, fill = name)) +
+  geom_boxplot(position=position_dodge(1)) +
+  labs(title = "Lyft", x = " ") +
+  theme_bw()
+
+grid.arrange(Uber.price, Lyft.price, nrow = 2)
+
+```
+
+
+# Distance vs Price
+```{r}
+ggplot(rides, aes(distance)) +
+  geom_histogram(col = "black", fill="lightblue", alpha=0.5, position="identity", alpha=0.5) +
+  theme_bw()
+
 ggplot(rides, aes(distance, price)) +
-  geom_point(alpha = 0.1) +
+  geom_point(alpha = 0.05) +
   geom_smooth()
 ```
 
