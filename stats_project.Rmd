@@ -118,17 +118,55 @@ ggplot(rides, aes(distance)) +
   geom_histogram(col = "black", fill="lightblue", alpha=0.5, position="identity", alpha=0.5) +
   theme_bw()
 
-ggplot(rides, aes(distance, price)) +
-  geom_point(alpha = 0.05) +
-  geom_smooth()
+ggplot(rides %>% filter(cab_type == "Uber" & name != "Taxi"), aes(distance, price)) +
+  geom_point(alpha = 0.05, aes(col = name)) +
+  labs(title = "Uber") +
+  theme_bw()
+
+ggplot(rides %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, price)) +
+  geom_point(alpha = 0.05, aes(col = name)) +
+  labs(title = "Lyft") +
+  theme_bw() 
+```
+
+
+# Price on weekdays:
+```{r}
+week.uber <- ggplot(rides %>% filter(cab_type == "Uber") %>% group_by(weekdays), aes(weekdays, price, fill = weekdays))+
+  geom_violin(position=position_dodge(1)) +
+  labs(title = "Uber", x = " ") +
+  theme_bw()
+
+week.lyft <- ggplot(rides %>% filter(cab_type == "Lyft") %>% group_by(weekdays), aes(weekdays, price, fill = weekdays))+
+  geom_violin(position=position_dodge(1)) +
+  labs(title = "Lyft", x = " ") +
+  theme_bw()
+
+grid.arrange(week.uber, week.lyft)
+```
+
+
+# Price on destination:
+```{r}
+dest.uber <- ggplot(rides %>% filter(cab_type == "Uber") %>% group_by(destination), aes(destination, price, fill = destination))+
+  geom_boxplot(position=position_dodge(1)) +
+  labs(title = "Uber", x = " ") +
+  theme_bw()
+
+dest.lyft <- ggplot(rides %>% filter(cab_type == "Lyft") %>% group_by(destination), aes(destination, price, fill = destination))+
+  geom_boxplot(position=position_dodge(1)) +
+  labs(title = "Lyft", x = " ") +
+  theme_bw()
+
+grid.arrange(dest.uber, dest.lyft)
 ```
 
 
 
+```{r}
 
 
-
-
+```
 
 
 
