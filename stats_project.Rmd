@@ -12,6 +12,8 @@ library(knitr)
 library(reshape)
 library(lubridate)
 library(gridExtra)
+library(sqldf)
+
 ```
 
 
@@ -40,7 +42,7 @@ kable(PropWeatherNA, format = "markdown")
 Roughly 8% of values from price column missing in rides, the rest are complete. 85% of values from rain missing in weather table, the rest are complete. It's proabably that the NA values in the rain column just correspond to 0% chance of rain. 
 
 ```{r}
-# To replace missing values of rian with 0
+# To replace missing values of rain with 0
 weather$rain[is.na(weather$rain)] <- 0
 ```
 
@@ -59,9 +61,27 @@ weather$Time <- format(weather$timestamp,"%H:%M:%S")
 # Merge datasets
 ```{r}
 weather$hour<-hour(hms(weather$Time))
-weather$merge<-paste(weather$location,weather$Date,weather$hou)
+weather$merge<-paste(weather$location,weather$Date,weather$hour)
 rides$hour<-hour(hms(rides$Time))
 rides$merge<-paste(rides$destination,rides$Date,rides$hour)
+
+weatherDF <- sqldf("select AVG(temp) as temp_avg,AVG(clouds) as clouds_avg,AVG(pressure) as pressure_avg,AVG(rain) as rain_avg,AVG(humidity) as humidity_avg,AVG(wind) as wind_avg,merge from weather group by merge")
+
+mergeDF<-merge(rides,weatherDF,by='merge')
+#drop redundant columns
+str(merge_DF)
+```
+
+Add time of day column
+```{r}
+rides$TOD <- with(rides,  ifelse(hour >= 5 & hour<=11, "morning",
+                            ifelse(hour>11 & hour<=16, "evening", "night")))
+
+rides.weather <- merge(x = rides, y = weather, by = merge, all.x = TRUE, all.y = FALSE)
+rides.weather <- inner_join(rides, weather, by = "merge")
+
+plot(rides.weather$humidity, rides.weather$price)
+
 ```
 
 
@@ -161,11 +181,32 @@ dest.lyft <- ggplot(rides %>% filter(cab_type == "Lyft") %>% group_by(destinatio
 grid.arrange(dest.uber, dest.lyft)
 ```
 
+# Price on time of day
+```{r}
+tod.uber <- ggplot(rides %>% filter(cab_type == "Uber") %>% group_by(TOD), aes(TOD, price, fill = TOD))+
+  geom_boxplot(position=position_dodge(1)) +
+  labs(title = "Uber", x = " ") +
+  theme_bw()
+
+tod.lyft <- ggplot(rides %>% filter(cab_type == "Lyft") %>% group_by(TOD), aes(TOD, price, fill = TOD)) + geom_boxplot(position=position_dodge(1)) + labs(title = "Lyft", x = " ") + theme_bw()
+
+grid.arrange(tod.uber, tod.lyft)
+
+
+```
+
 
 
 ```{r}
+mean(rides$price[rides$cab_type == "Uber"], na.rm = T)
+mean(rides$price[rides$cab_type == "Lyft"], na.rm = T)
 
+t.test(rides$price[rides$cab_type == "Lyft"], rides$price[rides$cab_type == "Uber"])
 
+rides$price[rides$cab_type == "Uber"]
+
+rides %>% filter(cab_type == "Uber") %>% count()
+rides %>% filter(cab_type == "Lyft") %>% count()
 ```
 
 
@@ -173,12 +214,23 @@ grid.arrange(dest.uber, dest.lyft)
 
 
 
+```{r}
+ggplot(rides %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, price)) +
+  geom_point(alpha = 0.05, aes(col = TOD)) +
+  labs(title = "Lyft") +
+  theme_bw() 
+
+mean(rides$price[rides$TOD == "morning"], na.rm = T)
+mean(rides$price[rides$TOD == "night"], na.rm = T)
+mean(rides$price[rides$TOD == "evening"], na.rm = T)
+
+t.test(rides$price[rides$cab_type == "Uber"], rides$price[rides$cab_type == "Lyft"])
+```
 
 
+```{r}
 
-
-
-
+```
 
 
 
