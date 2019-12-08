@@ -23,24 +23,6 @@ rides <- read_csv("uber-lyft-cab-prices/cab_rides.csv")
 ```
 
 
-# Check data for completness:
-```{r}
-ridesNA <- rides %>%
-  select(everything()) %>%
-  summarise_all(funs(sum(is.na(.))))
-
-PropRidesNA <- (ridesNA/nrow(rides))*100
-kable(PropRidesNA, format = "markdown")
-
-weatherNA <- weather %>%
-  select(everything()) %>%
-  summarise_all(funs(sum(is.na(.))))
-
-PropWeatherNA <- (weatherNA/nrow(weather))*100
-kable(PropWeatherNA, format = "markdown")
-```
-Roughly 8% of values from price column missing in rides, the rest are complete. 85% of values from rain missing in weather table, the rest are complete. It's proabably that the NA values in the rain column just correspond to 0% chance of rain. 
-
 ```{r}
 # To replace missing values of rain with 0
 weather$rain[is.na(weather$rain)] <- 0
@@ -72,28 +54,39 @@ mergeDF<-merge(rides,weatherDF,by='merge')
 str(merge_DF)
 ```
 
-Add time of day column
+Add time of day column and remove 'taxi'
 ```{r}
-rides$TOD <- with(rides,  ifelse(hour >= 5 & hour<=11, "morning",
+mergeDF$TOD <- with(mergeDF,  ifelse(hour >= 5 & hour<=11, "morning",
                             ifelse(hour>11 & hour<=16, "evening", "night")))
 
-rides.weather <- merge(x = rides, y = weather, by = merge, all.x = TRUE, all.y = FALSE)
-rides.weather <- inner_join(rides, weather, by = "merge")
 
-plot(rides.weather$humidity, rides.weather$price)
+mergeDF <- mergeDF %>% filter(name != 'Taxi')
 
 ```
 
 
+# Check data for completness:
+```{r}
+ridesNA <- mergeDF %>%
+  select(everything()) %>%
+  summarise_all(funs(sum(is.na(.))))
+
+PropRidesNA <- (ridesNA/nrow(rides))*100
+kable(PropRidesNA, format = "markdown")
+
+```
+Roughly 8% of values from price column missing, the rest are complete. 
+
+
 # Variable of interest
 ```{r}
-summary(rides$price)
+summary(mergeDF$price)
 
-ggplot(rides, aes(price, color = cab_type)) +
+ggplot(mergeDF, aes(price, color = cab_type)) +
   geom_histogram(fill="white", alpha=0.5, position="identity", alpha=0.5) +
   theme_bw()
 
-ggplot(rides, aes(as.factor(cab_type), price)) +
+ggplot(mergeDF, aes(as.factor(cab_type), price)) +
   geom_boxplot(varwidth=T, fill="plum") +
   labs(x = "Cab Type") +
   theme_bw()
@@ -102,27 +95,27 @@ ggplot(rides, aes(as.factor(cab_type), price)) +
 
 # How does price vary by cab type?
 ```{r}
-levels(as.factor(rides$name[rides$cab_type == "Uber"]))
-levels(as.factor(rides$name[rides$cab_type == "Lyft"]))
+levels(as.factor(mergeDF$name[mergeDF$cab_type == "Uber"]))
+levels(as.factor(mergeDF$name[mergeDF$cab_type == "Lyft"]))
 
 
-rides %>%
+mergeDF %>%
   filter(cab_type == "Uber") %>%
   group_by(name) %>% 
   summarise(min(price), max(price), median(price), mean(price))
 
-rides %>%
+mergeDF %>%
   filter(cab_type == "Lyft") %>%
   group_by(name) %>% 
   summarise(min(price), max(price), median(price), mean(price))
 
 
-Uber.price <- ggplot(rides %>% filter(cab_type == "Uber" & name != "Taxi") %>% group_by(name), aes(reorder(as.factor(name), price, FUN = median), price, fill = name)) +
+Uber.price <- ggplot(mergeDF %>% filter(cab_type == "Uber" & name != "Taxi") %>% group_by(name), aes(reorder(as.factor(name), price, FUN = median), price, fill = name)) +
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
   theme_bw()
 
-Lyft.price <- ggplot(rides %>% filter(cab_type == "Lyft" & name != "Taxi") %>% group_by(name), aes(reorder(as.factor(name), price, FUN = median), price, fill = name)) +
+Lyft.price <- ggplot(mergeDF %>% filter(cab_type == "Lyft" & name != "Taxi") %>% group_by(name), aes(reorder(as.factor(name), price, FUN = median), price, fill = name)) +
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Lyft", x = " ") +
   theme_bw()
@@ -134,16 +127,16 @@ grid.arrange(Uber.price, Lyft.price, nrow = 2)
 
 # Distance vs Price
 ```{r}
-ggplot(rides, aes(distance)) +
+ggplot(mergeDF, aes(distance)) +
   geom_histogram(col = "black", fill="lightblue", alpha=0.5, position="identity", alpha=0.5) +
   theme_bw()
 
-ggplot(rides %>% filter(cab_type == "Uber" & name != "Taxi"), aes(distance, price)) +
+ggplot(mergeDF %>% filter(cab_type == "Uber" & name != "Taxi"), aes(distance, price)) +
   geom_point(alpha = 0.05, aes(col = name)) +
   labs(title = "Uber") +
   theme_bw()
 
-ggplot(rides %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, price)) +
+ggplot(mergeDF %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, price)) +
   geom_point(alpha = 0.05, aes(col = name)) +
   labs(title = "Lyft") +
   theme_bw() 
@@ -152,12 +145,12 @@ ggplot(rides %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, pric
 
 # Price on weekdays:
 ```{r}
-week.uber <- ggplot(rides %>% filter(cab_type == "Uber") %>% group_by(weekdays), aes(weekdays, price, fill = weekdays))+
+week.uber <- ggplot(mergeDF %>% filter(cab_type == "Uber") %>% group_by(weekdays), aes(weekdays, price, fill = weekdays))+
   geom_violin(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
   theme_bw()
 
-week.lyft <- ggplot(rides %>% filter(cab_type == "Lyft") %>% group_by(weekdays), aes(weekdays, price, fill = weekdays))+
+week.lyft <- ggplot(mergeDF %>% filter(cab_type == "Lyft") %>% group_by(weekdays), aes(weekdays, price, fill = weekdays))+
   geom_violin(position=position_dodge(1)) +
   labs(title = "Lyft", x = " ") +
   theme_bw()
@@ -168,12 +161,12 @@ grid.arrange(week.uber, week.lyft)
 
 # Price on destination:
 ```{r}
-dest.uber <- ggplot(rides %>% filter(cab_type == "Uber") %>% group_by(destination), aes(destination, price, fill = destination))+
+dest.uber <- ggplot(mergeDF %>% filter(cab_type == "Uber") %>% group_by(destination), aes(destination, price, fill = destination))+
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
   theme_bw()
 
-dest.lyft <- ggplot(rides %>% filter(cab_type == "Lyft") %>% group_by(destination), aes(destination, price, fill = destination))+
+dest.lyft <- ggplot(mergeDF %>% filter(cab_type == "Lyft") %>% group_by(destination), aes(destination, price, fill = destination))+
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Lyft", x = " ") +
   theme_bw()
@@ -183,12 +176,12 @@ grid.arrange(dest.uber, dest.lyft)
 
 # Price on time of day
 ```{r}
-tod.uber <- ggplot(rides %>% filter(cab_type == "Uber") %>% group_by(TOD), aes(TOD, price, fill = TOD))+
+tod.uber <- ggplot(mergeDF %>% filter(cab_type == "Uber") %>% group_by(TOD), aes(TOD, price, fill = TOD))+
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
   theme_bw()
 
-tod.lyft <- ggplot(rides %>% filter(cab_type == "Lyft") %>% group_by(TOD), aes(TOD, price, fill = TOD)) + geom_boxplot(position=position_dodge(1)) + labs(title = "Lyft", x = " ") + theme_bw()
+tod.lyft <- ggplot(mergeDF %>% filter(cab_type == "Lyft") %>% group_by(TOD), aes(TOD, price, fill = TOD)) + geom_boxplot(position=position_dodge(1)) + labs(title = "Lyft", x = " ") + theme_bw()
 
 grid.arrange(tod.uber, tod.lyft)
 
@@ -198,12 +191,12 @@ grid.arrange(tod.uber, tod.lyft)
 
 
 ```{r}
-mean(rides$price[rides$cab_type == "Uber"], na.rm = T)
-mean(rides$price[rides$cab_type == "Lyft"], na.rm = T)
+mean(rides$mergeDF[rides$cab_type == "Uber"], na.rm = T)
+mean(rides$mergeDF[rides$cab_type == "Lyft"], na.rm = T)
 
-t.test(rides$price[rides$cab_type == "Lyft"], rides$price[rides$cab_type == "Uber"])
+t.test(rides$mergeDF[rides$cab_type == "Lyft"], rides$mergeDF[rides$cab_type == "Uber"])
 
-rides$price[rides$cab_type == "Uber"]
+rides$mergeDF[rides$cab_type == "Uber"]
 
 rides %>% filter(cab_type == "Uber") %>% count()
 rides %>% filter(cab_type == "Lyft") %>% count()
@@ -215,16 +208,16 @@ rides %>% filter(cab_type == "Lyft") %>% count()
 
 
 ```{r}
-ggplot(rides %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, price)) +
+ggplot(mergeDF %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, price)) +
   geom_point(alpha = 0.05, aes(col = TOD)) +
   labs(title = "Lyft") +
   theme_bw() 
 
-mean(rides$price[rides$TOD == "morning"], na.rm = T)
-mean(rides$price[rides$TOD == "night"], na.rm = T)
-mean(rides$price[rides$TOD == "evening"], na.rm = T)
+mean(mergeDF$price[mergeDF$TOD == "morning"], na.rm = T)
+mean(mergeDF$price[mergeDF$TOD == "night"], na.rm = T)
+mean(mergeDF$price[mergeDF$TOD == "evening"], na.rm = T)
 
-t.test(rides$price[rides$cab_type == "Uber"], rides$price[rides$cab_type == "Lyft"])
+t.test(mergeDF$price[mergeDF$cab_type == "Uber"], mergeDF$price[mergeDF$cab_type == "Lyft"])
 ```
 
 
