@@ -22,12 +22,16 @@ library(reshape)
 library(lubridate)
 library(gridExtra)
 library(sqldf)
-library(sjPlot)
-library(sjmisc)
-library(sjlabelled)
+#library(sjPlot)
+#library(sjmisc)
+#library(sjlabelled)
 library(pscl)
 library(kableExtra)
 library(jtools)
+library(stargazer)
+library(formattable)
+#library(data.table)
+#install.packages("stargazer")
 #install.packages("jtools")
 #install.packages("pscl")
 #install.packages("sjPlot")
@@ -107,6 +111,7 @@ Our variable of interest is price, which ranges from $2.50 to $97.50.
 summary1 <- as.data.frame(as.array(summary(mergeDF$price)))
 names(summary1) <- c("Price", "Value")
 kable(summary1, type = "Markdown")
+
 ```
 
 The distribution of price is about the same for both Uber and Lyft
@@ -189,13 +194,134 @@ ggplot(mergeDF %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, pr
   theme_bw() 
 ```
 
-```{r pressure, echo=FALSE, fig.cap="Uber:", out.width = '100%'}
-knitr::include_graphics("Uber.png")
+```{r message=FALSE, warning=FALSE, include=FALSE}
+cor(mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lyft") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lyft") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lux Black") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lux Black") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lux Black XL") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lux Black XL") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lux") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lux") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lyft XL") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Lyft XL") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Shared") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Lyft" & name == "Shared") %>%
+      select(price))
 ```
 
-```{r pressure2, echo=FALSE, fig.cap="Lyft", out.width = '100%'}
-knitr::include_graphics("Lyft.png")
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor_lyft <- matrix(c(0.7798634,"","","","","","",0.8132575,"","","","","","",0.6973414,"","","","","","",0.8366301,"","","","","","",0.8144453,"","","","","","",0.6420404), ncol = 6, byrow=TRUE)
+colnames(cor_lyft) <- c("   Lyft", "Lux Black", " Lux Black XL", "   Lux", "Lyft XL", "Shared")
+rownames(cor_lyft) <- c("Lyft", "Lux Black", "Lux Black XL", "Lux", "Lyft XL", "Shared")
+cor_lyft <- data.frame(
+  "Price Vs Distance" = c("Lyft", "Lux Black", "Lux Black XL", "Lux", "Lyft XL", "Shared"),
+  Lyft = c(0.7798634,"","","","",""),
+  LuxBlack = c("",0.8132575,"","","",""),
+  LuxBlackXL = c("","",0.6973414,"","",""),
+  Lux = c("","","",0.8366301,"",""),
+  LyftXL = c("","","","", 0.8144453,""),
+  Shared = c("","","","","",0.6420404))
+formattable(cor_lyft,
+            align = c("l",rep("r", NCOL(cor_lyft) - 1)),
+            list(`"Price Vs Distance"` = formatter("span", style = ~ style(color = "grey", font.weight = "bold")),
+                 `Lyft` = color_bar("lightgreen"),
+                 `LuxBlack` = color_bar("lightgreen"),
+                 `LuxBlackXL` = color_bar("lightgreen"),
+                 `Lux` = color_bar("lightgreen"),
+                 `LyftXL` = color_bar("lightgreen"),
+                 `Shared` = color_bar("lightgreen")))
 ```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+cor(mergeDF %>%
+      filter(cab_type == "Uber" & name == "Black") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Uber" & name == "Black") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Uber" & name == "Black SUV") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Uber" & name == "Black SUV") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Uber" & name == "UberPool") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Uber" & name == "UberPool") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Uber" & name == "UberX") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Uber" & name == "UberX") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Uber" & name == "UberXL") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Uber" & name == "UberXL") %>%
+      select(price))
+cor(mergeDF %>%
+      filter(cab_type == "Uber" & name == "WAV") %>%
+      select(distance),
+    mergeDF %>%
+      filter(cab_type == "Uber" & name == "WAV") %>%
+      select(price))
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cor_uber <- matrix(c(0.9131188,"","","","","","",0.8582338,"","","","","","",0.670947,"","","","","","",0.7350737,"","","","","","",0.7859246,"","","","","","",0.7353036), ncol = 6, byrow=TRUE)
+colnames(cor_uber) <- c("   Black", "Black SUV", " UberPool", "   UberX", "UberXL", "WAV")
+rownames(cor_uber) <- c("Black", "Black SUV", "UberPool", "UberX", "UberXL", "WAV")
+# cor_uber <- as.table(cor_uber)
+#names(attributes(cor_uber)$dimnames) <- c("  Price","                          Distance")
+cor_uber <- data.frame(
+  "Price Vs Distance" = c("Black", "Black SUV", "UberPool", "UberX", "UberXL", "WAV"),
+  Black = c(0.7798634,"","","","",""),
+  BlackSUV = c("",0.8132575,"","","",""),
+  UberPool = c("","",0.6973414,"","",""),
+  UberX = c("","","",0.8366301,"",""),
+  UberXL = c("","","","", 0.8144453,""),
+  WAV = c("","","","","",0.6420404))
+formattable(cor_uber,
+            align = c("l",rep("r", NCOL(cor_lyft) - 1)),
+            list(`"Price Vs Distance"` = formatter("span", style = ~ style(color = "grey", font.weight = "bold")),
+                 `Black` = color_bar("lightgreen"),
+                 `BlackSUV` = color_bar("lightgreen"),
+                 `UberPool` = color_bar("lightgreen"),
+                 `UberX` = color_bar("lightgreen"),
+                 `UberXL` = color_bar("lightgreen"),
+                 `WAV` = color_bar("lightgreen")))
+```
+
 We can see really see high correlations between distance and price when broken down by ride type, suggesting potential linear relationships.
 
 
@@ -306,7 +432,7 @@ effect_size <- 2* abs(asin(sqrt(x/n))-asin(sqrt(0.30)))
 
 
 # two sample, Is the mean price 
-```{r}
+```{r message=FALSE, warning=FALSE}
 t.test(mergeDF$price[mergeDF$cab_type == "Uber"], mergeDF$price[mergeDF$cab_type == "Lyft"])
 
 x1 <- mean(mergeDF$price[mergeDF$cab_type == "Uber"])
@@ -344,16 +470,16 @@ rmOutliers <- rmOutliers %>% filter(distance < 2.90 + 1.5*(IQR(rmOutliers$distan
 
 ```
 
-Base Model: The base model just regresses cab type on price.
+Reduced Model: The base model just regresses cab type on price.
 
 Model:
 $$ \begin{equation}
 \hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 X_i + \hat{\epsilon}_i
 \end{equation} $$
-```{r}
+```{r, results='asis'}
 # base model
 model1 <- lm(price ~ cab_type, data = rmOutliers)
-summ(model1)
+stargazer(model1, type = "html")
 ```
 
 The second model includes cab type and controls for distance and the type of Uber or Lyft (name)
@@ -362,9 +488,11 @@ Model:
 $$ \begin{align*}
 \hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 {X_1}_i + \hat{\beta}_1 {X_2}_i  +\sum_{j=1}^{i}\hat{\beta_3}_j {X_3}_i  \\ 
 \end{align*} $$
-```{r}
-model2 <- lm(log(price) ~ cab_type + distance + as.factor(name), data = rmOutliers)
-summ(model2, stringAsFactors = T)
+```{r, results='asis'}
+model2 <- lm(price ~ cab_type + distance + as.factor(name), data = rmOutliers)
+summary(model2)
+stargazer(model2, type= "html")
+
 
 ```
 
@@ -374,9 +502,10 @@ Model:
 $$ \begin{align*}
 \hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 {X_1}_i + \hat{\beta}_1 {X_2}_i  +\sum_{j=1}^{i}\hat{\beta_3}_j {X_3}_i +\sum_{j=1}^{i}\hat{\beta_4}_j {X_4}_i \\ 
 \end{align*} $$
-```{r}
+```{r, results='asis'}
 model3 <- lm(price ~ cab_type + distance + as.factor(name) + as.factor(weekdays), data = rmOutliers)
-summ(model3)
+summary(model3)
+stargazer(model3, type = "html")
 ```
 
 We confirmed the insignificance of adding the day of the week dummy variable, now we add the time of day variable. From the box plots above, time of day also didn't seem to have much association with price. 
@@ -385,18 +514,18 @@ Model:
 $$ \begin{align*}
 \hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 {X_1}_i + \hat{\beta}_1 {X_2}_i  +\sum_{j=1}^{i}\hat{\beta_3}_j {X_3}_i +\sum_{j=1}^{i}\hat{\beta_4}_j {X_4}_i \\ 
 \end{align*} $$
-```{r}
+```{r, results='asis'}
 model4 <- lm(price ~ cab_type + distance + as.factor(name) + as.factor(TOD), data = rmOutliers)
-summ(model4)
+stargazer(model4, type ="html")
 ```
 The coefficients confirmed the week association we saw in the boxplots.
 
 
 
 
-```{r}
+```{r, results='asis', align = 'center'}
 
-
+stargazer(model1, model2, model3, model4, type = "html", title = "Regression Results", align=TRUE, dep.var.labels="Price", covariate.labels=c("Uber", "Distance", "Black SUV", "Lux", "Lux Black", "Lux Black XL", "Lyft", "Lyft XL", "Shared", "UberPool", "UberX", "UberXL", "WAV", "Monday", "Saturday", "Sunday", "Thursday", "Tuesday", "Wednesday", "Morning", "Night"),  omit.stat=c("LL","ser","f"), report=('vc*p'))
 #plot(model2$residuals)
 #qqnorm(model2$residuals)
 #abline(0,0)
