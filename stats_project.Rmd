@@ -1,11 +1,20 @@
 ---
-title: "Statistics Project"
+title: "Ridesharing Project"
 output: html_document
 editor_options: 
   chunk_output_type: console
 ---
 
-```{r}
+##### *Nate Wagner*
+##### *Olivia Roberts*
+##### *Dominic Ventura*
+
+## Introduction
+
+This project conducts statistical analysis on Uber and Lyft price estimates, and seeks to find associations between price and other variables. The data comes from [Kaggle](https://www.kaggle.com/ravi72munde/uber-lyft-cab-prices), and was collected via Uber and Lyft api queries and corresponding weather conditions by this [user](https://github.com/ravi72munde). Inspiration for cleaning and combining the rides and weather table came from [here](https://www.kaggle.com/tangyx233/uber-lyft-cab-prices).
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
 library(readr)
 library(tidyverse)
 library(knitr)
@@ -13,23 +22,34 @@ library(reshape)
 library(lubridate)
 library(gridExtra)
 library(sqldf)
-
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(pscl)
+library(kableExtra)
+library(jtools)
+#install.packages("jtools")
+#install.packages("pscl")
+#install.packages("sjPlot")
+#install.packages("sjmisc")
+#install.packages("sjlabelled")
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 weather <- read_csv("uber-lyft-cab-prices/weather.csv")
 rides <- read_csv("uber-lyft-cab-prices/cab_rides.csv")
 ```
 
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 # To replace missing values of rain with 0
 weather$rain[is.na(weather$rain)] <- 0
 ```
 
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
 # To fix the timestamp:
-```{r}
 rides$timestamp <- as.POSIXct(rides$time_stamp/1000,origin='1970-01-01',tz='America/New_York')
 rides$Date <- as.Date(rides$timestamp)
 rides$Time <- format(rides$timestamp,"%H:%M:%S")
@@ -40,8 +60,9 @@ weather$Date<-as.Date(weather$timestamp)
 weather$Time <- format(weather$timestamp,"%H:%M:%S")
 ```
 
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
 # Merge datasets
-```{r}
 weather$hour<-hour(hms(weather$Time))
 weather$merge<-paste(weather$location,weather$Date,weather$hour)
 rides$hour<-hour(hms(rides$Time))
@@ -51,11 +72,12 @@ weatherDF <- sqldf("select AVG(temp) as temp_avg,AVG(clouds) as clouds_avg,AVG(p
 
 mergeDF<-merge(rides,weatherDF,by='merge')
 #drop redundant columns
-str(merge_DF)
+
 ```
 
-Add time of day column and remove 'taxi'
-```{r}
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Add time of day column and remove 'taxi'
 mergeDF$TOD <- with(mergeDF,  ifelse(hour >= 5 & hour<=11, "morning",
                             ifelse(hour>11 & hour<=16, "evening", "night")))
 
@@ -65,27 +87,37 @@ mergeDF <- mergeDF %>% filter(name != 'Taxi')
 ```
 
 
-# Check data for completness:
-```{r}
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+## Check data for completness:
 ridesNA <- mergeDF %>%
   select(everything()) %>%
   summarise_all(funs(sum(is.na(.))))
 
 PropRidesNA <- (ridesNA/nrow(rides))*100
 kable(PropRidesNA, format = "markdown")
-
 ```
-Roughly 8% of values from price column missing, the rest are complete. 
 
 
-# Variable of interest
-```{r}
-summary(mergeDF$price)
 
+## Exploratory Data Analysis
+
+Our variable of interest is price, which ranges from $2.50 to $97.50.
+```{r message=FALSE, warning=FALSE}
+summary1 <- as.data.frame(as.array(summary(mergeDF$price)))
+names(summary1) <- c("Price", "Value")
+kable(summary1, type = "Markdown")
+```
+
+The distribution of price is about the same for both Uber and Lyft
+```{r message=FALSE, warning=FALSE}
 ggplot(mergeDF, aes(price, color = cab_type)) +
   geom_histogram(fill="white", alpha=0.5, position="identity", alpha=0.5) +
   theme_bw()
+```
 
+```{r eval=FALSE, include=FALSE}
+# boxplot of price by cab type
 ggplot(mergeDF, aes(as.factor(cab_type), price)) +
   geom_boxplot(varwidth=T, fill="plum") +
   labs(x = "Cab Type") +
@@ -93,23 +125,33 @@ ggplot(mergeDF, aes(as.factor(cab_type), price)) +
 ```
 
 
-# How does price vary by cab type?
-```{r}
+#### How does price vary by cab type?
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 levels(as.factor(mergeDF$name[mergeDF$cab_type == "Uber"]))
 levels(as.factor(mergeDF$name[mergeDF$cab_type == "Lyft"]))
+```
+
+Here is the min, max, median and mean price of a trip broken down by the ride type
+```{r message=FALSE, warning=FALSE}
+price1 <- mergeDF %>%
+            filter(cab_type == "Uber") %>%
+            group_by(name) %>% 
+            summarise(min(price), max(price), median(price), mean(price))
+names(price1) <- c("Ride Type", "Min Price", "Max Price", "Median Price", "Mean Price")
+
+price2 <- mergeDF %>%
+            filter(cab_type == "Lyft") %>%
+            group_by(name) %>% 
+            summarise(min(price), max(price), median(price), mean(price))
+names(price2) <- c("Ride Type", "Min Price", "Max Price", "Median Price", "Mean Price")
+
+kable(price1, type = "markdown")
+kable(price2, type = "markdown")
+```
 
 
-mergeDF %>%
-  filter(cab_type == "Uber") %>%
-  group_by(name) %>% 
-  summarise(min(price), max(price), median(price), mean(price))
-
-mergeDF %>%
-  filter(cab_type == "Lyft") %>%
-  group_by(name) %>% 
-  summarise(min(price), max(price), median(price), mean(price))
-
-
+Here we can clearly see how the distribution of price changes depending on the ride type. 
+```{r message=FALSE, warning=FALSE}
 Uber.price <- ggplot(mergeDF %>% filter(cab_type == "Uber" & name != "Taxi") %>% group_by(name), aes(reorder(as.factor(name), price, FUN = median), price, fill = name)) +
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
@@ -125,12 +167,17 @@ grid.arrange(Uber.price, Lyft.price, nrow = 2)
 ```
 
 
-# Distance vs Price
-```{r}
+#### Distance vs Price
+
+The distribution of price is roughly bimodal and a little skewed right
+```{r message=FALSE, warning=FALSE}
 ggplot(mergeDF, aes(distance)) +
   geom_histogram(col = "black", fill="lightblue", alpha=0.5, position="identity", alpha=0.5) +
   theme_bw()
+```
 
+Here is a scatter plot of price vs distance broken down by ride type for both Uber and Lyft
+```{r message=FALSE, warning=FALSE}
 ggplot(mergeDF %>% filter(cab_type == "Uber" & name != "Taxi"), aes(distance, price)) +
   geom_point(alpha = 0.05, aes(col = name)) +
   labs(title = "Uber") +
@@ -142,9 +189,20 @@ ggplot(mergeDF %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, pr
   theme_bw() 
 ```
 
+```{r pressure, echo=FALSE, fig.cap="Uber:", out.width = '100%'}
+knitr::include_graphics("Uber.png")
+```
 
-# Price on weekdays:
-```{r}
+```{r pressure2, echo=FALSE, fig.cap="Lyft", out.width = '100%'}
+knitr::include_graphics("Lyft.png")
+```
+We can see really see high correlations between distance and price when broken down by ride type, suggesting potential linear relationships.
+
+
+#### Price on weekdays
+
+There doesn't seem to be much differences in the distribution of price when it is broken down by weekday. 
+```{r message=FALSE, warning=FALSE}
 week.uber <- ggplot(mergeDF %>% filter(cab_type == "Uber") %>% group_by(weekdays), aes(weekdays, price, fill = weekdays))+
   geom_violin(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
@@ -159,8 +217,8 @@ grid.arrange(week.uber, week.lyft)
 ```
 
 
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # Price on destination:
-```{r}
 dest.uber <- ggplot(mergeDF %>% filter(cab_type == "Uber") %>% group_by(destination), aes(destination, price, fill = destination))+
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
@@ -174,8 +232,10 @@ dest.lyft <- ggplot(mergeDF %>% filter(cab_type == "Lyft") %>% group_by(destinat
 grid.arrange(dest.uber, dest.lyft)
 ```
 
-# Price on time of day
-```{r}
+#### Price on time of day
+
+There also doesn't seem to be much difference in the distribution of price when it is broken down by the time of day
+```{r message=FALSE, warning=FALSE}
 tod.uber <- ggplot(mergeDF %>% filter(cab_type == "Uber") %>% group_by(TOD), aes(TOD, price, fill = TOD))+
   geom_boxplot(position=position_dodge(1)) +
   labs(title = "Uber", x = " ") +
@@ -184,56 +244,167 @@ tod.uber <- ggplot(mergeDF %>% filter(cab_type == "Uber") %>% group_by(TOD), aes
 tod.lyft <- ggplot(mergeDF %>% filter(cab_type == "Lyft") %>% group_by(TOD), aes(TOD, price, fill = TOD)) + geom_boxplot(position=position_dodge(1)) + labs(title = "Lyft", x = " ") + theme_bw()
 
 grid.arrange(tod.uber, tod.lyft)
-
-
 ```
 
 
 
-```{r}
-mean(rides$mergeDF[rides$cab_type == "Uber"], na.rm = T)
-mean(rides$mergeDF[rides$cab_type == "Lyft"], na.rm = T)
+#### Mean price of an Uber trip 
+```{r message=FALSE, warning=FALSE}
+price<- mergeDF %>%
+  filter(cab_type == "Uber") %>%
+  select(price)
+mean.uber<- mergeDF %>%
+  filter(cab_type == "Uber") %>%
+  select(price) %>%
+  summarize(average = mean(price))
+sd.uber<- mergeDF %>%
+  filter(cab_type == "Uber") %>%
+  select(price) %>%
+  summarize(average = sd(price))
+n<- mergeDF %>%
+  filter(cab_type == "Uber") %>%
+  summarize(sample_size = n())
+price<- as.vector(price)
+mean.uber<- as.integer(mean.uber)
+sd.uber<- as.integer(sd.uber)
+n<- as.integer(n)
+CI<- c(mean.uber - (1.95*(sd.uber/sqrt(n))) , mean.uber + (1.95*(sd.uber/sqrt(n))))
+print(CI)
+```
 
-t.test(rides$mergeDF[rides$cab_type == "Lyft"], rides$mergeDF[rides$cab_type == "Uber"])
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+# maybe include
+#Here we see the average price of an Uber trip is $15
+#$$ \begin{equation} 
+#\bar{x} = 15 
+#\end{equation} $$
 
-rides$mergeDF[rides$cab_type == "Uber"]
-
-rides %>% filter(cab_type == "Uber") %>% count()
-rides %>% filter(cab_type == "Lyft") %>% count()
+#95% Confidence Interval:
+#$$ \begin{equation} 
+#(14.97, 15.02) 
+#\end{equation} $$
 ```
 
 
-
-
-
-
+Here we conduct a hypothesis test to see whether the mean price of an Uber trip in boston differs from $10
 ```{r}
-ggplot(mergeDF %>% filter(cab_type == "Lyft" & name != "Taxi"), aes(distance, price)) +
-  geom_point(alpha = 0.05, aes(col = TOD)) +
-  labs(title = "Lyft") +
-  theme_bw() 
+t.test(price, mu = 10, conf.level = 0.95)
+eff.size<- (mean.uber - 10)/sd.uber
+print(eff.size)
+```
+# interpret #
 
-mean(mergeDF$price[mergeDF$TOD == "morning"], na.rm = T)
-mean(mergeDF$price[mergeDF$TOD == "night"], na.rm = T)
-mean(mergeDF$price[mergeDF$TOD == "evening"], na.rm = T)
 
+#### Proportion of basic Uber X trips
+```{r}
+x <- mergeDF %>% filter(name == "Lyft" | name == "UberX") %>% count()
+n <- nrow(mergeDF)
+prop.test(as.integer(x), n, 0.30)
+
+effect_size <- 2* abs(asin(sqrt(x/n))-asin(sqrt(0.30)))
+```
+
+
+# two sample, Is the mean price 
+```{r}
 t.test(mergeDF$price[mergeDF$cab_type == "Uber"], mergeDF$price[mergeDF$cab_type == "Lyft"])
+
+x1 <- mean(mergeDF$price[mergeDF$cab_type == "Uber"])
+x2 <- mean(mergeDF$price[mergeDF$cab_type == "Lyft"])
+s1 <- sd(mergeDF$price[mergeDF$cab_type == "Uber"])
+s2 <- sd(mergeDF$price[mergeDF$cab_type == "Lyft"])
+n1 <- length(mergeDF$price[mergeDF$cab_type == "Uber"])
+n2 <- length(mergeDF$price[mergeDF$cab_type == "Lyft"])
+
+
+effect_size <- abs((x1 - x2)) / sqrt((s1 + s2)/2)
 ```
+
+
+
+
+# remove outliers of price and distance
+```{r}
+lower <- quantile(mergeDF$price, .25) - 1.5*IQR(mergeDF$price)
+upper <- quantile(mergeDF$price, .75) + 1.5*IQR(mergeDF$price)
+
+# there are 5566 rows with price greater than 1.5xIQR + 75% quantile
+mergeDF %>% filter(price > upper) %>% count()
+
+# remove those values
+rmOutliers <- mergeDF %>% filter(price < upper)
+
+upper.d <- quantile(rmOutliers$distance, .75) + 1.5*IQR(rmOutliers$distance)
+
+# there are 617 rows with distance greater than 1.5xIQR + 75% quantile
+rmOutliers %>% filter(distance > upper.d) %>% count()
+
+# removed those values
+rmOutliers <- rmOutliers %>% filter(distance < 2.90 + 1.5*(IQR(rmOutliers$distance)))
+
+```
+
+Base Model: The base model just regresses cab type on price.
+
+Model:
+$$ \begin{equation}
+\hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 X_i + \hat{\epsilon}_i
+\end{equation} $$
+```{r}
+# base model
+model1 <- lm(price ~ cab_type, data = rmOutliers)
+summ(model1)
+```
+
+The second model includes cab type and controls for distance and the type of Uber or Lyft (name)
+
+Model:
+$$ \begin{align*}
+\hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 {X_1}_i + \hat{\beta}_1 {X_2}_i  +\sum_{j=1}^{i}\hat{\beta_3}_j {X_3}_i  \\ 
+\end{align*} $$
+```{r}
+model2 <- lm(log(price) ~ cab_type + distance + as.factor(name), data = rmOutliers)
+summ(model2, stringAsFactors = T)
+
+```
+
+The third model adds day of the week to the model. As we saw earlier in the boxplot, there wasn't much difference in the distribution of days of the week so the coefficients on these terms should be insignificant.
+
+Model:
+$$ \begin{align*}
+\hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 {X_1}_i + \hat{\beta}_1 {X_2}_i  +\sum_{j=1}^{i}\hat{\beta_3}_j {X_3}_i +\sum_{j=1}^{i}\hat{\beta_4}_j {X_4}_i \\ 
+\end{align*} $$
+```{r}
+model3 <- lm(price ~ cab_type + distance + as.factor(name) + as.factor(weekdays), data = rmOutliers)
+summ(model3)
+```
+
+We confirmed the insignificance of adding the day of the week dummy variable, now we add the time of day variable. From the box plots above, time of day also didn't seem to have much association with price. 
+
+Model:
+$$ \begin{align*}
+\hat{Y}_i = \hat{\beta}_0 + \hat{\beta}_1 {X_1}_i + \hat{\beta}_1 {X_2}_i  +\sum_{j=1}^{i}\hat{\beta_3}_j {X_3}_i +\sum_{j=1}^{i}\hat{\beta_4}_j {X_4}_i \\ 
+\end{align*} $$
+```{r}
+model4 <- lm(price ~ cab_type + distance + as.factor(name) + as.factor(TOD), data = rmOutliers)
+summ(model4)
+```
+The coefficients confirmed the week association we saw in the boxplots.
+
+
 
 
 ```{r}
 
+
+#plot(model2$residuals)
+#qqnorm(model2$residuals)
+#abline(0,0)
+#hist(model2$residuals)
+#quantile(model2$residuals)
+#plot(model2$residuals)
+#qqnorm(model2$residuals)
 ```
-
-
-
-
-
-
-
-
-
-
 
 
 
