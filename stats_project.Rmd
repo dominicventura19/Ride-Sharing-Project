@@ -265,7 +265,7 @@ mergeDF <- mutate(mergeDF, SurgePrice = surge_multiplier * price)
 
 
 
-Here is a scatter plot of price vs distance broken down by ride type for both Uber and Lyft. When broken down by ride type, it becomes clear there is some strong positive linear relationship between price and distance. 
+Here is a scatter plot of price vs distance broken down by ride type for both Uber and Lyft. When broken down by ride type, it becomes clear there is potentially some strong positive linear relationship between price and distance. 
 <br>
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 DvP1 <- ggplot(mergeDF %>% filter(cab_type == "Uber" & name != "Taxi"), aes(distance, price)) +
@@ -410,7 +410,7 @@ formattable(cor_uber,
                  `WAV` = color_bar("lightgreen")))
 ```
 <br>
-As we can see, there really are high correlations between distance and price when broken down by ride type.
+To confirm, there are high correlations between distance and price when broken down by ride type here.
 <br>
 <br>
 
@@ -708,7 +708,7 @@ stargazer(SurgeModel, type = "html", digits = 2, title = "Regression Results", d
 
 #### Conclusion
 
-The effect of Uber on the first model is -0.35, which is just the difference in means of estimated price between Uber and Lyft. This suggest that the base price of Uber is on average -$0.35 less than Lyft's base price. Adding distance to the second model doesn't do much to the coeffcient on Uber, but distance is statistically significant. Now when we control for the vehicle type of the cab, that's when we see the difference in means switch signs, suggesting that controling for distance and vehicle type, Uber is on average $0.24 more than Lyft's base price. When looking the surge price model, we do confirm there is no effect of the time of day and the day of the week on surge price estimates in Boston, which is consistent with our boxplots above. 
+The effect of Uber on the first model is -0.35, which is just the difference in means of estimated price between Uber and Lyft. This suggest that the base price of Uber is on average -$0.35 less than Lyft's base price. Adding distance to the second model doesn't do much to the coeffcient on Uber, but distance is statistically significant. Now when we control for the vehicle type of the cab, that's when we see the difference in means switch signs, suggesting that controling for distance and vehicle type, Uber is on average $0.24 more than Lyft's base price. When looking at the surge price model, we do confirm there is no effect of the time of day and the day of the week on surge price estimates in Boston, which is consistent with our boxplots above. 
 
 <br>
 <br>
