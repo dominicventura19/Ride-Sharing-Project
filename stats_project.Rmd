@@ -188,13 +188,13 @@ price1 <- mergeDF %>%
             filter(cab_type == "Uber") %>%
             group_by(type) %>% 
             summarise(min(price), max(price), median(price), mean(price))
-names(price1) <- c("-   Ride Type", "-   Min Price", "-   Max Price", "-   Median Price", "-   Mean Price")
+names(price1) <- c("-   Uber Ride Type", "-   Uber Min Price", "-   Uber Max Price", "-   Uber Median Price", "-   Uber Mean Price")
 
 price2 <- mergeDF %>%
             filter(cab_type == "Lyft") %>%
             group_by(type) %>% 
             summarise(min(price), max(price), median(price), mean(price))
-names(price2) <- c("-   Ride Type", "-   Min Price", "-   Max Price", "-   Median Price", "-   Mean Price")
+names(price2) <- c("-   Lyft Ride Type", "-   Lyft Min Price", "-   Lyft Max Price", "-   Lyft Median Price", "-   Lyft Mean Price")
 
 kable(price1, type = "markdown")
 kable(price2, type = "markdown")
@@ -213,7 +213,7 @@ There are 5 different vehicle types for Uber (Black, Black SUV, Uber Pool, UberX
 
 <br>
 
-We also combined Lux with Lux Black with Lux because they are essentially the same vehicle type minus some small difference. 
+We also combined Lux with Lux Black because they are essentially the same vehicle type minus some small difference. 
 
 <br>
 
@@ -265,7 +265,7 @@ mergeDF <- mutate(mergeDF, SurgePrice = surge_multiplier * price)
 
 
 
-Here is a scatter plot of price vs distance broken down by ride type for both Uber and Lyft
+Here is a scatter plot of price vs distance broken down by ride type for both Uber and Lyft. When broken down by ride type, it becomes clear there is some strong positive linear relationship between price and distance. 
 <br>
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 DvP1 <- ggplot(mergeDF %>% filter(cab_type == "Uber" & name != "Taxi"), aes(distance, price)) +
@@ -410,7 +410,7 @@ formattable(cor_uber,
                  `WAV` = color_bar("lightgreen")))
 ```
 <br>
-We can see really see high correlations between distance and price when broken down by ride type, suggesting potential linear relationships.
+As we can see, there really are high correlations between distance and price when broken down by ride type.
 <br>
 <br>
 
