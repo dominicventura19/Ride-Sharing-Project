@@ -8,7 +8,7 @@ The data comes from [Kaggle](https://www.kaggle.com/ravi72munde/uber-lyft-cab-pr
 
 ## Results
 
-Our final [results](https://natewagner10.github.io/Ride-Sharing-Project/stats_project.html) can be viewed here.
+Our final results can be viewed [here](https://natewagner10.github.io/Ride-Sharing-Project/stats_project.html).
 
 
 ## Attribution
